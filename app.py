@@ -1,13 +1,14 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import altair as alt
 
 st.set_page_config(page_title="Rossmann Forecast", layout="wide")
 st.title("Rossmann 6-week store sales forecast")
 
 @st.cache_data
 def load():
-    return pd.read_csv("forecast_results.csv_2", parse_dates=["Date"]).dropna()
+    return pd.read_csv("forecast_results_2.csv", parse_dates=["Date"]).dropna()
 
 df = load()
 
@@ -23,6 +24,20 @@ c2.metric("Baseline RMSPE", f"{m_base:.3f}")
 c3.metric("Error reduction", f"{(1 - m_model / m_base):.1%}")
 
 store = st.selectbox("Store", sorted(df.Store.unique()))
-s = df[df.Store == store].sort_values("Date").set_index("Date")
-st.line_chart(s[["Sales", "Forecast", "Baseline"]])
+
+# Prepare data and build zero-indexed Altair chart
+s = df[df.Store == store].sort_values("Date")
+df_long = s[["Date", "Sales", "Forecast", "Baseline"]].melt(
+    id_vars="Date", 
+    var_name="Series", 
+    value_name="Value"
+)
+
+chart = alt.Chart(df_long).mark_line().encode(
+    x=alt.X("Date:T", axis=alt.Axis(format="%b %d")),
+    y=alt.Y("Value:Q", scale=alt.Scale(zero=True), title="Sales"),
+    color="Series:N"
+)
+st.altair_chart(chart, use_container_width=True)
+
 st.caption(f"Store {store}: XGBoost RMSPE {rmspe(s.Sales, s.Forecast):.3f} vs baseline {rmspe(s.Sales, s.Baseline):.3f}")
