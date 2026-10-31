@@ -7,7 +7,7 @@ st.title("Rossmann 6-week store sales forecast")
 
 @st.cache_data
 def load():
-    return pd.read_csv("forecast_results.csv", parse_dates=["Date"]).dropna()
+    return pd.read_csv("forecast_results.csv_2", parse_dates=["Date"]).dropna()
 
 df = load()
 
